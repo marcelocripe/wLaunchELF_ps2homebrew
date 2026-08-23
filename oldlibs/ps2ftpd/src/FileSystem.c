@@ -69,8 +69,6 @@ void FileSystem_Destroy(FSContext *pContext)
 int FileSystem_OpenFile(FSContext *pContext, const char *pFile, FileMode eMode, int iContinue)
 {
     int flags;
-    int fileMode = 0;
-    int iOpened = 0;
 
     FileSystem_Close(pContext);
     FileSystem_BuildPath(buffer, pContext->m_Path, pFile);
@@ -98,7 +96,11 @@ int FileSystem_OpenFile(FSContext *pContext, const char *pFile, FileMode eMode, 
 
     switch (pContext->m_eType) {
         case FS_IODEVICE: {
+            int fileMode = 0;
+
             if (iContinue) {
+                int iOpened = 0;
+
                 if (flags & O_WRONLY) {
                     pContext->m_kFile.mode = O_WRONLY;
                     if (pContext->m_kFile.device->ops->open(&(pContext->m_kFile), pFile, pContext->m_kFile.mode, 0) >= 0)
@@ -247,8 +249,8 @@ int FileSystem_WriteFile(FSContext *pContext, const char *pBuffer, int iSize)
 int FileSystem_ReadDir(FSContext *pContext, FSFileInfo *pInfo)
 {
 #ifdef LINUX
-    struct dirent *ent;
-    struct tm *t;
+    const struct dirent *ent;
+    const struct tm *t;
     struct stat s;
 
     memset(pInfo, 0, sizeof(FSFileInfo));
@@ -345,23 +347,23 @@ int FileSystem_ReadDir(FSContext *pContext, FSFileInfo *pInfo)
                         pInfo->m_iProtection = 0x1FF;
 
                     /* debug info
-					printf( "Name:          \t%s\n", ent.name );
-					printf( "Size:          \t%li\n", (u32)ent.stat.size );
-					printf( "Mode:          \t0x%04X\n", ent.stat.mode );
-					printf( "Created:       \t%02i/%02i/%i \t", ent.stat.ctime[5], ent.stat.ctime[4], (ent.stat.ctime[7] << 8) + ent.stat.ctime[6] );
-					printf( "%02i:%02i:%02i\n", ent.stat.ctime[3], ent.stat.ctime[2], ent.stat.ctime[1] );
-					printf( "Modified:      \t%02i/%02i/%i \t", ent.stat.mtime[5], ent.stat.mtime[4], (ent.stat.mtime[7] << 8) + ent.stat.mtime[6] );
-					printf( "%02i:%02i:%02i\n", ent.stat.mtime[3], ent.stat.mtime[2], ent.stat.mtime[1] );
-					if( !strcmp(pContext->m_kFile.device->name, "mass") )
-						printf( "Accessed:      \t%02i/%02i/%i\n", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
-					else if( strcmp(pContext->m_kFile.device->name, "mc") )
-					{
-						printf( "Accessed:      \t%02i/%02i/%i \t", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
-						printf( "%02i:%02i:%02i\n", ent.stat.atime[3], ent.stat.atime[2], ent.stat.atime[1] );
-					}
-					printf( "System time:   \t%02i/%02i/%i \t", tm.month, tm.day, tm.year );
-					printf( "%02i:%02i:%02i  (%i days between)\n\n", tm.hour, tm.min, tm.sec, pInfo->m_iDaysBetween );
-					*/
+                    printf( "Name:          \t%s\n", ent.name );
+                    printf( "Size:          \t%li\n", (u32)ent.stat.size );
+                    printf( "Mode:          \t0x%04X\n", ent.stat.mode );
+                    printf( "Created:       \t%02i/%02i/%i \t", ent.stat.ctime[5], ent.stat.ctime[4], (ent.stat.ctime[7] << 8) + ent.stat.ctime[6] );
+                    printf( "%02i:%02i:%02i\n", ent.stat.ctime[3], ent.stat.ctime[2], ent.stat.ctime[1] );
+                    printf( "Modified:      \t%02i/%02i/%i \t", ent.stat.mtime[5], ent.stat.mtime[4], (ent.stat.mtime[7] << 8) + ent.stat.mtime[6] );
+                    printf( "%02i:%02i:%02i\n", ent.stat.mtime[3], ent.stat.mtime[2], ent.stat.mtime[1] );
+                    if( !strcmp(pContext->m_kFile.device->name, "mass") )
+                        printf( "Accessed:      \t%02i/%02i/%i\n", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
+                    else if( strcmp(pContext->m_kFile.device->name, "mc") )
+                    {
+                        printf( "Accessed:      \t%02i/%02i/%i \t", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
+                        printf( "%02i:%02i:%02i\n", ent.stat.atime[3], ent.stat.atime[2], ent.stat.atime[1] );
+                    }
+                    printf( "System time:   \t%02i/%02i/%i \t", tm.month, tm.day, tm.year );
+                    printf( "%02i:%02i:%02i  (%i days between)\n\n", tm.hour, tm.min, tm.sec, pInfo->m_iDaysBetween );
+                    */
 
                     return 0;
                 }
@@ -411,19 +413,19 @@ int FileSystem_ReadDir(FSContext *pContext, FSFileInfo *pInfo)
                     pInfo->m_iProtection = ent.stat.mode & (FIO_S_IRWXU | FIO_S_IRWXG | FIO_S_IRWXO);
 
                     /* debug info
-					printf( "Name:          \t%s\n", ent.name );
-					printf( "Size:          \t%li\n", (u32)ent.stat.size );
-					printf( "Mode:          \t0x%04X\n", ent.stat.mode );
-					printf( "Attr:          \t0x%04X\n", ent.stat.attr );
-					printf( "Created:       \t%02i/%02i/%i \t", ent.stat.ctime[5], ent.stat.ctime[4], (ent.stat.ctime[7] << 8) + ent.stat.ctime[6] );
-					printf( "%02i:%02i:%02i\n", ent.stat.ctime[3], ent.stat.ctime[2], ent.stat.ctime[1] );
-					printf( "Modified:      \t%02i/%02i/%i \t", ent.stat.mtime[5], ent.stat.mtime[4], (ent.stat.mtime[7] << 8) + ent.stat.mtime[6] );
-					printf( "%02i:%02i:%02i\n", ent.stat.mtime[3], ent.stat.mtime[2], ent.stat.mtime[1] );
-					printf( "Accessed:      \t%02i/%02i/%i \t", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
-					printf( "%02i:%02i:%02i\n", ent.stat.atime[3], ent.stat.atime[2], ent.stat.atime[1] );
-					printf( "System time:   \t%02i/%02i/%i \t", tm.month, tm.day, tm.year );
-					printf( "%02i:%02i:%02i  (%i days between)\n\n", tm.hour, tm.min, tm.sec, pInfo->m_iDaysBetween );
-					*/
+                    printf( "Name:          \t%s\n", ent.name );
+                    printf( "Size:          \t%li\n", (u32)ent.stat.size );
+                    printf( "Mode:          \t0x%04X\n", ent.stat.mode );
+                    printf( "Attr:          \t0x%04X\n", ent.stat.attr );
+                    printf( "Created:       \t%02i/%02i/%i \t", ent.stat.ctime[5], ent.stat.ctime[4], (ent.stat.ctime[7] << 8) + ent.stat.ctime[6] );
+                    printf( "%02i:%02i:%02i\n", ent.stat.ctime[3], ent.stat.ctime[2], ent.stat.ctime[1] );
+                    printf( "Modified:      \t%02i/%02i/%i \t", ent.stat.mtime[5], ent.stat.mtime[4], (ent.stat.mtime[7] << 8) + ent.stat.mtime[6] );
+                    printf( "%02i:%02i:%02i\n", ent.stat.mtime[3], ent.stat.mtime[2], ent.stat.mtime[1] );
+                    printf( "Accessed:      \t%02i/%02i/%i \t", ent.stat.atime[5], ent.stat.atime[4], (ent.stat.atime[7] << 8) + ent.stat.atime[6] );
+                    printf( "%02i:%02i:%02i\n", ent.stat.atime[3], ent.stat.atime[2], ent.stat.atime[1] );
+                    printf( "System time:   \t%02i/%02i/%i \t", tm.month, tm.day, tm.year );
+                    printf( "%02i:%02i:%02i  (%i days between)\n\n", tm.hour, tm.min, tm.sec, pInfo->m_iDaysBetween );
+                    */
 
                     return 0;
                 }
@@ -494,7 +496,7 @@ int FileSystem_ReadDir(FSContext *pContext, FSFileInfo *pInfo)
             } else {
                 // evaluating devices
 
-                ModuleInfo_t *pkModule;
+                const ModuleInfo_t *pkModule;
                 iop_device_t **ppkDevices;
                 int num_devices;
                 int dev_offset;
@@ -517,13 +519,13 @@ int FileSystem_ReadDir(FSContext *pContext, FSFileInfo *pInfo)
                     int unit = pContext->m_kFile.unit;
                     pContext->m_kFile.unit++;
 
+                    if (!ppkDevices[unit])
+                        continue;
+
                     if (strcmp(ppkDevices[unit]->name, "hdd") &&
                         strcmp(ppkDevices[unit]->name, "mass") &&
                         strcmp(ppkDevices[unit]->name, "mc") &&
                         strcmp(ppkDevices[unit]->name, "pfs"))
-                        continue;
-
-                    if (!ppkDevices[unit])
                         continue;
 
                     if (!(ppkDevices[unit]->type & (IOP_DT_FS | IOP_DT_BLOCK)))
@@ -576,7 +578,6 @@ int FileSystem_DeleteFile(FSContext *pContext, const char *pFile)
 
 int FileSystem_CreateDir(FSContext *pContext, const char *pDir)
 {
-    int fileMode = 0;
     FileSystem_BuildPath(buffer, pContext->m_Path, pDir);
 
 #ifdef LINUX
@@ -587,6 +588,8 @@ int FileSystem_CreateDir(FSContext *pContext, const char *pDir)
 
     switch (pContext->m_eType) {
         case FS_IODEVICE: {
+            int fileMode = 0;
+
             if (!pContext->m_kFile.device)
                 break;
 
@@ -724,7 +727,7 @@ int FileSystem_ChangeDir(FSContext *pContext, const char *pPath)
         if ((pContext->m_Path[strlen(pContext->m_Path) - 1] != '/'))
             strcat(pContext->m_Path, "/");
     } else {
-        char *entry = strtok(buffer, "/");
+        const char *entry = strtok(buffer, "/");
 
         while (entry && strlen(entry) > 0) {
             if (!strcmp(entry, "..")) {
@@ -914,7 +917,7 @@ ModuleInfo_t *FileSystem_GetModule(const char *pDevice)
 
 iop_device_t *FileSystem_ScanDevice(const char *pDevice, int iNumDevices, const char *pPath)
 {
-    ModuleInfo_t *pkModule;
+    const ModuleInfo_t *pkModule;
     iop_device_t **ppkDevices;
     int i;
     int offset;

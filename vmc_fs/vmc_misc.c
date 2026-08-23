@@ -134,7 +134,7 @@ unsigned int getDirentryFromPath(struct direntry *retval, const char *path, stru
 //----------------------------------------------------------------------------
 // Add 2 pseudo entries for a new directory
 //----------------------------------------------------------------------------
-unsigned int addPseudoEntries(struct gen_privdata *gendata, struct direntry *parent, int unit)
+unsigned int addPseudoEntries(const struct gen_privdata *gendata, const struct direntry *parent, int unit)
 {
 
     // Get a free cluster we can use to store the entries '.' and '..'
@@ -290,15 +290,15 @@ unsigned int addObject(struct gen_privdata *gendata, unsigned int parent_cluster
 // Set as free the last cluster of the direntry.
 // Finaly, set deleted flag of the direntry. ( DF_EXISTS flag )
 //----------------------------------------------------------------------------
-void removeObject(struct gen_privdata *gendata, unsigned int dirent_cluster, struct direntry *dirent, int unit)
+void removeObject(const struct gen_privdata *gendata, unsigned int dirent_cluster, struct direntry *dirent, int unit)
 {
 
-    unsigned int current_cluster = 0;
     unsigned int last_cluster = dirent->cluster;
 
     DEBUGPRINT(3, "vmc_fs: Searching last cluster of direntry\n");
 
     while (1) {
+        unsigned int current_cluster;
 
         current_cluster = getFatEntry(gendata->fd, last_cluster, gendata->indir_fat_clusters, FAT_VALUE);
 
@@ -339,39 +339,39 @@ void removeObject(struct gen_privdata *gendata, unsigned int dirent_cluster, str
 //----------------------------------------------------------------------------
 // Return a free cluster.
 //----------------------------------------------------------------------------
-unsigned int getFreeCluster(struct gen_privdata *gendata, int unit)
+unsigned int getFreeCluster(const struct gen_privdata *gendata, int unit)
 {
 
-    unsigned int i = 0;
-    unsigned int value = 0;
-    unsigned int cluster_mask = MASK_CLUSTER;
+    unsigned int i;
+    unsigned int cluster_mask;
 
     for (i = g_Vmc_Image[unit].last_free_cluster; i < gendata->last_allocatable; i++) {
+        unsigned int value;
 
         value = getFatEntry(gendata->fd, i - gendata->first_allocatable, gendata->indir_fat_clusters, FAT_VALUE);
 
         if (value == FREE_CLUSTER) {
 
-            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %d ... value is FREE_CLUSTER\n", i - gendata->first_allocatable);
+            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %u ... value is FREE_CLUSTER\n", i - gendata->first_allocatable);
 
-            DEBUGPRINT(6, "vmc_fs: Free cluster found at %d in fat table\n", i - gendata->first_allocatable);
+            DEBUGPRINT(6, "vmc_fs: Free cluster found at %u in fat table\n", i - gendata->first_allocatable);
             g_Vmc_Image[unit].last_free_cluster = i;
 
             return (i - gendata->first_allocatable);
 
         } else if (value == EOF_CLUSTER) {
 
-            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %d ... value is EOF_CLUSTER\n", i - gendata->first_allocatable);
+            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %u ... value is EOF_CLUSTER\n", i - gendata->first_allocatable);
 
         } else {
 
-            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %d ... value is %d\n", i - gendata->first_allocatable, value);
+            DEBUGPRINT(10, "vmc_fs: Testing fat table cluster %u ... value is %u\n", i - gendata->first_allocatable, value);
 
             cluster_mask = getFatEntry(gendata->fd, i - gendata->first_allocatable, gendata->indir_fat_clusters, FAT_MASK);
 
             if (cluster_mask != MASK_CLUSTER) {
 
-                DEBUGPRINT(6, "vmc_fs: Free cluster found at %d in fat table\n", i - gendata->first_allocatable);
+                DEBUGPRINT(6, "vmc_fs: Free cluster found at %u in fat table\n", i - gendata->first_allocatable);
                 g_Vmc_Image[unit].last_free_cluster = i;
 
                 return (i - gendata->first_allocatable);
@@ -428,8 +428,8 @@ int setDefaultSpec(int unit)
     g_Vmc_Image[unit].header.mc_type = 0x2;
     g_Vmc_Image[unit].header.mc_flag = 0x2B;
 
-    DEBUGPRINT(4, "vmc_fs: Image file Info: Number of pages       : %d\n", g_Vmc_Image[unit].total_pages);
-    DEBUGPRINT(4, "vmc_fs: Image file Info: Size of a cluster     : %d bytes\n", g_Vmc_Image[unit].cluster_size);
+    DEBUGPRINT(4, "vmc_fs: Image file Info: Number of pages       : %u\n", g_Vmc_Image[unit].total_pages);
+    DEBUGPRINT(4, "vmc_fs: Image file Info: Size of a cluster     : %u bytes\n", g_Vmc_Image[unit].cluster_size);
     DEBUGPRINT(4, "vmc_fs: Image file Info: ECC shunk found       : %s\n", g_Vmc_Image[unit].ecc_flag ? "YES" : "NO");
     DEBUGPRINT(3, "vmc_fs: Image file Info: Vmc card type         : %s MemoryCard.\n", (g_Vmc_Image[unit].header.mc_type == PSX_MEMORYCARD ? "PSX" : (g_Vmc_Image[unit].header.mc_type == PS2_MEMORYCARD ? "PS2" : "PDA")));
     DEBUGPRINT(4, "vmc_fs: SuperBlock Info: page_size             : 0x%02x\n", g_Vmc_Image[unit].header.page_size);
@@ -596,11 +596,12 @@ const unsigned char ECC_XOR_Table[256] = {
 //----------------------------------------------------------------------------
 static void calculateECC(u8 *ECC_Chunk, const u8 *Data_Chunk)
 {
-    int i, c;
+    int i;
 
     ECC_Chunk[0] = ECC_Chunk[1] = ECC_Chunk[2] = 0;
 
     for (i = 0; i < 0x80; i++) {
+        int c;
 
         c = ECC_XOR_Table[Data_Chunk[i]];
 

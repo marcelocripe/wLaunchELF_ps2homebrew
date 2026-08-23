@@ -86,9 +86,9 @@ enum {
 
     // possible commands, we'll implement them if it become necessary
 
-    //FTPCMD_FEAT = FCOMMAND('f','e','a','t'),
-    //FTPCMD_STAT = FCOMMAND('s','t','a','t'),
-    //FTPCMD_HELP = FCOMMAND('h','e','l','p'),
+    // FTPCMD_FEAT = FCOMMAND('f','e','a','t'),
+    // FTPCMD_STAT = FCOMMAND('s','t','a','t'),
+    // FTPCMD_HELP = FCOMMAND('h','e','l','p'),
 };
 
 enum {
@@ -143,7 +143,7 @@ void FtpClient_OnCmdQuit(FtpClient *pClient);
 void FtpClient_OnCmdUser(FtpClient *pClient, const char *pUser);
 void FtpClient_OnCmdPass(FtpClient *pClient, const char *pPass);
 void FtpClient_OnCmdPasv(FtpClient *pClient);
-void FtpClient_OnCmdPort(FtpClient *pClient, int *ip, int port);
+void FtpClient_OnCmdPort(FtpClient *pClient, const int *ip, int port);
 void FtpClient_OnCmdSyst(FtpClient *pClient);
 void FtpClient_OnCmdList(FtpClient *pClient, const char *pPath, int iNamesOnly);
 void FtpClient_OnCmdType(FtpClient *pClient, const char *pType);
@@ -167,7 +167,7 @@ void FtpClient_OnCmdFeat(FtpClient *pClient);
 void FtpClient_OnSiteMount(FtpClient *pClient, const char *pMountPoint, const char *pMountFile);
 void FtpClient_OnSiteUmount(FtpClient *pClient, const char *pMountPoint);
 void FtpClient_OnSiteSync(FtpClient *pClient, const char *pDeviceName);
-void FtpClient_OnDataConnect(FtpClient *pClient, int *ip, int port);
+void FtpClient_OnDataConnect(FtpClient *pClient, const int *ip, int port);
 void FtpClient_OnDataConnected(FtpClient *pClient);
 void FtpClient_OnDataRead(FtpClient *pClient);
 void FtpClient_OnDataWrite(FtpClient *pClient);

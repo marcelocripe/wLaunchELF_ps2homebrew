@@ -62,7 +62,7 @@ char *itoa(char *in, int val)
 char *uitoa(char *in, u64 val)
 {
     char *p = in;
-    int bool = 0;
+    int b = 0;
     int i = 19;
     char c;
     int j;
@@ -76,10 +76,10 @@ char *uitoa(char *in, u64 val)
 
         for (c = '0'; val >= tmp; c++) {
             val -= tmp;
-            bool = 1;
+            b = 1;
         }
 
-        if (bool == 1)
+        if (b == 1)
             *p++ = c;
     } while (i);
 
@@ -166,7 +166,7 @@ void FtpClient_OnConnect(FtpClient *pClient)
 
 void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
 {
-    char *c;
+    const char *c;
 
     assert(pClient);
 
@@ -187,7 +187,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
             switch (result) {
                 // USER <name>
                 case FTPCMD_USER: {
-                    char *user = strtok(NULL, "");
+                    const char *user = strtok(NULL, "");
 
                     if (user)
                         FtpClient_OnCmdUser(pClient, user);
@@ -197,7 +197,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
 
                 // PASS <password>
                 case FTPCMD_PASS: {
-                    char *pass = strtok(NULL, "");
+                    const char *pass = strtok(NULL, "");
 
                     if (pass)
                         FtpClient_OnCmdPass(pClient, pass);
@@ -235,12 +235,12 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
                 int port = 0;
 
                 for (i = 0; i < 6; i++) {
-                    char *val = strtok(NULL, ",");
+                    const char *val = strtok(NULL, ",");
 
                     if (!val)
                         break;
 
-                    if (i >= 0 && i < 4) {
+                    if (i < 4) {
                         ip[i] = strtol(val, NULL, 10);
                     } else if (4 == i) {
                         port = strtol(val, NULL, 10) * 256;
@@ -267,7 +267,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
 
             // LIST
             case FTPCMD_LIST: {
-                char *path = strtok(NULL, "");
+                const char *path = strtok(NULL, "");
 
                 if (path)
                     FtpClient_OnCmdList(pClient, path, 0);
@@ -277,7 +277,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
 
             // NLST
             case FTPCMD_NLST: {
-                char *path = strtok(NULL, "");
+                const char *path = strtok(NULL, "");
 
                 if (path)
                     FtpClient_OnCmdList(pClient, path, 1);
@@ -304,7 +304,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
             case FTPCMD_MODE:
             case FTPCMD_STRU:
             case FTPCMD_SIZE: {
-                char *arg = strtok(NULL, "");
+                const char *arg = strtok(NULL, "");
 
                 if (arg) {
                     switch (result) {
@@ -374,15 +374,15 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
                 char *marker = strtok(NULL, "");
 
                 if (marker) {
-                    char *c = marker;
-                    while (*c) {
-                        if ((*c < '0') || (*c > '9'))
+                    char *cmarker = marker;
+                    while (*cmarker) {
+                        if ((*cmarker < '0') || (*cmarker > '9'))
                             break;
-                        c++;
+                        cmarker++;
                     }
 
-                    if (!*c)
-                        FtpClient_OnCmdRest(pClient, (!*c) ? strtol(marker, NULL, 10) : -1);
+                    if (!*cmarker)
+                        FtpClient_OnCmdRest(pClient, strtol(marker, NULL, 10));
                 } else
                     FtpClient_Send(pClient, 500, pClient->m_pMessages[FTPMSG_REQUIRES_PARAMETERS]);
             } break;
@@ -399,7 +399,7 @@ void FtpClient_OnCommand(FtpClient *pClient, const char *pString)
         FtpClient_Send(pClient, 500, pClient->m_pMessages[FTPMSG_NOT_UNDERSTOOD]);
 }
 
-void FtpClient_OnDataConnect(FtpClient *pClient, int *ip, int port)
+void FtpClient_OnDataConnect(FtpClient *pClient, const int *ip, int port)
 {
     int s;
     struct sockaddr_in sa;
@@ -425,15 +425,15 @@ void FtpClient_OnDataConnect(FtpClient *pClient, int *ip, int port)
 
     // attempt to enter non-blocking mode
     /*
-	FIXME: non-blocking mode - if this is not enabled, the entire server will
-	stall when the connect is made. the ps2 does not seem to have capability
-	in the lwip-stack to support non-blocking sockets yet though...
+    FIXME: non-blocking mode - if this is not enabled, the entire server will
+    stall when the connect is made. the ps2 does not seem to have capability
+    in the lwip-stack to support non-blocking sockets yet though...
 
-	if( fcntl( s, F_SETFL, O_NONBLOCK ) < 0 )
-	{
-		FtpClient_OnDataFailed(pClient,NULL);
-		return;
-	}
+    if( fcntl( s, F_SETFL, O_NONBLOCK ) < 0 )
+    {
+        FtpClient_OnDataFailed(pClient,NULL);
+        return;
+    }
 */
 
     memset(&sa, 0, sizeof(sa));
@@ -573,6 +573,8 @@ void FtpClient_OnDataWrite(FtpClient *pClient)
             FSFileInfo *pInfo = (FSFileInfo *)(buffer + BUFFER_OFFSET);
 
             if (FileSystem_ReadDir(&pClient->m_kContext, pInfo) >= 0) {
+                char name_buf[256];
+
                 buffer[0] = '\0';
                 if (DATAACTION_LIST == pClient->m_eDataAction) {
                     int i;
@@ -672,57 +674,58 @@ void FtpClient_OnDataWrite(FtpClient *pClient)
                     // end of UNIX-style LIST format
 
                     /* MS-style LIST format: To use uncomment this format after commenting out UNIX-style LIST format
-						and making changes to FtpCommands.c's method FtpClient_OnCmdSyst
-					i = pInfo->m_TS.m_iMonth;
-					if( i > 12 )
-						i = 1;
-					if( i < 10 )
-						strcat( buffer, "0" );
-					itoa( buffer + strlen(buffer), i );
+                        and making changes to FtpCommands.c's method FtpClient_OnCmdSyst
+                    i = pInfo->m_TS.m_iMonth;
+                    if( i > 12 )
+                        i = 1;
+                    if( i < 10 )
+                        strcat( buffer, "0" );
+                    itoa( buffer + strlen(buffer), i );
 
-					strcat( buffer, "-" );
-					if( pInfo->m_TS.m_iDay < 10 )
-						strcat( buffer, "0" );
-					itoa( buffer + strlen(buffer), pInfo->m_TS.m_iDay );
+                    strcat( buffer, "-" );
+                    if( pInfo->m_TS.m_iDay < 10 )
+                        strcat( buffer, "0" );
+                    itoa( buffer + strlen(buffer), pInfo->m_TS.m_iDay );
 
-					strcat( buffer, "-" );
-					if( pInfo->m_TS.m_iYear%100 < 10 )
-						strcat( buffer, "0" );
-					itoa( buffer + strlen(buffer), pInfo->m_TS.m_iYear%100 );
+                    strcat( buffer, "-" );
+                    if( pInfo->m_TS.m_iYear%100 < 10 )
+                        strcat( buffer, "0" );
+                    itoa( buffer + strlen(buffer), pInfo->m_TS.m_iYear%100 );
 
-					strcat( buffer, "  " );
-					i = pInfo->m_TS.m_iHour;
-					if( i > 12 )
-						i -= 12;
-					if( i == 0 )
-						i = 12;
-					if( i < 10 )
-						strcat( buffer, "0" );
-					itoa( buffer + strlen(buffer), i );
+                    strcat( buffer, "  " );
+                    i = pInfo->m_TS.m_iHour;
+                    if( i > 12 )
+                        i -= 12;
+                    if( i == 0 )
+                        i = 12;
+                    if( i < 10 )
+                        strcat( buffer, "0" );
+                    itoa( buffer + strlen(buffer), i );
 
-					strcat( buffer, ":" );
-					if( pInfo->m_TS.m_iMinute < 10 )
-						strcat( buffer, "0" );
-					itoa( buffer + strlen(buffer), pInfo->m_TS.m_iMinute );
-					if( pInfo->m_TS.m_iHour < 12 )
-						strcat( buffer, "AM       " );
-					else
-						strcat( buffer, "PM       " );
+                    strcat( buffer, ":" );
+                    if( pInfo->m_TS.m_iMinute < 10 )
+                        strcat( buffer, "0" );
+                    itoa( buffer + strlen(buffer), pInfo->m_TS.m_iMinute );
+                    if( pInfo->m_TS.m_iHour < 12 )
+                        strcat( buffer, "AM       " );
+                    else
+                        strcat( buffer, "PM       " );
 
-					if( FT_DIRECTORY == pInfo->m_eType )
-						strcat( buffer, "<DIR>         " );
-					else
-					{
-						uitoa( size, pInfo->m_iSize );
-						for( i = 0; (i < 14 - strlen(size)) && (strlen(size) < 15); i++ )
-							strcat( buffer, " " );
-						strcat( buffer, size );
-					}
-					strcat( buffer, " " );
-					*/
+                    if( FT_DIRECTORY == pInfo->m_eType )
+                        strcat( buffer, "<DIR>         " );
+                    else
+                    {
+                        uitoa( size, pInfo->m_iSize );
+                        for( i = 0; (i < 14 - strlen(size)) && (strlen(size) < 15); i++ )
+                            strcat( buffer, " " );
+                        strcat( buffer, size );
+                    }
+                    strcat( buffer, " " );
+                    */
                     // end of MS-style LIST format
                 }
-                strcat(buffer, pInfo->m_Name);
+                memcpy(name_buf, pInfo->m_Name, sizeof(name_buf));
+                strcat(buffer, name_buf);
                 strcat(buffer, "\r\n");
                 //				sprintf(buffer,"%srwxr-xr-x user group %d Jan 01 00:01 %s\r\n",(FT_DIRECTORY == pInfo->m_eType) ? "d" : "-", pInfo->m_iSize, pInfo->m_Name);
                 send(pClient->m_iDataSocket, buffer, strlen(buffer), 0);

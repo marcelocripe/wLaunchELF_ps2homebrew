@@ -158,22 +158,22 @@ void FtpClient_OnCmdPasv(FtpClient *pClient)
     strcat(buf, ",");
     itoa(buf + strlen(buf), (addr >> 8) & 0xff);
     strcat(buf, ",");
-    itoa(buf + strlen(buf), (addr)&0xff);
+    itoa(buf + strlen(buf), (addr) & 0xff);
     strcat(buf, ",");
     itoa(buf + strlen(buf), port >> 8);
     strcat(buf, ",");
     itoa(buf + strlen(buf), port & 0xff);
     strcat(buf, ").");
     /*
-	sprintf( buffer, "Entering passive mode (%d,%d,%d,%d,%d,%d).",
-										(addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, addr&0xff,
-										port>>8,port&0xff );
+    sprintf( buffer, "Entering passive mode (%d,%d,%d,%d,%d,%d).",
+                                        (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, addr&0xff,
+                                        port>>8,port&0xff );
 */
 
     FtpClient_Send(pClient, 227, buffer);
 }
 
-void FtpClient_OnCmdPort(FtpClient *pClient, int *ip, int port)
+void FtpClient_OnCmdPort(FtpClient *pClient, const int *ip, int port)
 {
     assert(pClient);
 
@@ -202,9 +202,9 @@ void FtpClient_OnCmdSyst(FtpClient *pClient)
     FtpClient_Send(pClient, 215, "UNIX Type: L8");
 
     /* MS-style LIST format: To use uncomment this format after commenting out UNIX-style LIST format
-		and making changes in FtpClient.c's FtpClient_OnDataWrite
-	FtpClient_Send( pClient, 215, "Windows_NT version 5.0" );
-	*/
+        and making changes in FtpClient.c's FtpClient_OnDataWrite
+    FtpClient_Send( pClient, 215, "Windows_NT version 5.0" );
+    */
 }
 
 void FtpClient_OnCmdList(struct FtpClient *pClient, const char *pPath, int iNamesOnly)
@@ -394,7 +394,7 @@ void FtpClient_OnCmdSize(FtpClient *pClient, const char *pFile)
 
 void FtpClient_OnCmdSite(FtpClient *pClient, const char *pCmd)
 {
-    char *c;
+    const char *c;
 
     // copy command to clean buffer
     strcpy(buffer, pCmd);
@@ -412,8 +412,8 @@ void FtpClient_OnCmdSite(FtpClient *pClient, const char *pCmd)
 #ifndef LINUX
             // SITE MNT <device> <file>
             case SITECMD_MNT: {
-                char *mount_point;
-                char *mount_file;
+                const char *mount_point;
+                const char *mount_file;
 
                 // get mount point
                 mount_point = strtok(NULL, " ");
@@ -434,7 +434,7 @@ void FtpClient_OnCmdSite(FtpClient *pClient, const char *pCmd)
 
             // SITE UMNT <device>
             case SITECMD_UMNT: {
-                char *mount_point = strtok(NULL, "");
+                const char *mount_point = strtok(NULL, "");
 
                 if (mount_point)
                     FtpClient_OnSiteUmount(pClient, mount_point);
@@ -444,7 +444,7 @@ void FtpClient_OnCmdSite(FtpClient *pClient, const char *pCmd)
 
             // SITE SYNC <device>
             case SITECMD_SYNC: {
-                char *devname = strtok(NULL, "");
+                const char *devname = strtok(NULL, "");
 
                 if (devname)
                     FtpClient_OnSiteSync(pClient, devname);

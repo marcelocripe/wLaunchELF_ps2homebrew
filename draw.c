@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-//File name:   draw.c
+// File name:   draw.c
 //--------------------------------------------------------------
 #include "launchelf.h"
 
@@ -8,29 +8,29 @@ GSTEXTURE TexSkin, TexPreview, TexPicture, TexThumb[MAX_ENTRY], TexIcon[2];
 int testskin, testsetskin, testjpg, testthumb;
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 448;
-//dlanor: values shown above are defaults for NTSC mode
+// dlanor: values shown above are defaults for NTSC mode
 u64 BrightColor;
 
-int updateScr_1;      //dlanor: flags screen updates for drawScr()
-int updateScr_2;      //dlanor: used for anti-flicker delay in drawScr()
-u64 updateScr_t = 0;  //dlanor: exit time of last drawScr()
+int updateScr_1;      // dlanor: flags screen updates for drawScr()
+int updateScr_2;      // dlanor: used for anti-flicker delay in drawScr()
+u64 updateScr_t = 0;  // dlanor: exit time of last drawScr()
 
 char LastMessage[MAX_TEXT_LINE + 2];
 
 int Menu_start_x = SCREEN_MARGIN + LINE_THICKNESS + FONT_WIDTH;
 int Menu_title_y = SCREEN_MARGIN;
 int Menu_message_y = SCREEN_MARGIN + FONT_HEIGHT;
-int Frame_start_y = SCREEN_MARGIN + 2 * FONT_HEIGHT + 2;  //First line of menu frame
+int Frame_start_y = SCREEN_MARGIN + 2 * FONT_HEIGHT + 2;  // First line of menu frame
 int Menu_start_y = SCREEN_MARGIN + 2 * FONT_HEIGHT + LINE_THICKNESS + 5;
-//dlanor: Menu_start_y is the 1st pixel line that may be used for main content of a menu
-//dlanor: values below are only calculated when a rez is activated
-int Menu_end_y;      //Normal menu display should not use pixels at this line or beyond
-int Frame_end_y;     //first line of frame bottom
-int Menu_tooltip_y;  //Menus may also use this row for tooltips
+// dlanor: Menu_start_y is the 1st pixel line that may be used for main content of a menu
+// dlanor: values below are only calculated when a rez is activated
+int Menu_end_y;      // Normal menu display should not use pixels at this line or beyond
+int Frame_end_y;     // first line of frame bottom
+int Menu_tooltip_y;  // Menus may also use this row for tooltips
 
 
-//The font file ELISA100.FNT is needed to display MC save titles in japanese
-//and the arrays defined here are needed to find correct data in that file
+// The font file ELISA100.FNT is needed to display MC save titles in japanese
+// and the arrays defined here are needed to find correct data in that file
 const u16 font404[] = {
     0xA2AF, 11,
     0xA2C2, 8,
@@ -52,17 +52,17 @@ const u16 font404[] = {
     0xF4A5, 1030,
     0, 0};
 
-// ASCII��SJIS�̕ϊ��p�z��
+// Tables to map SJIS/CP932 full-width to ASCII half-width.
 static const u8 sjis_lookup_81[256] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0x00
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0x10
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0x20
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0x30
-    ' ', ',', '.', ',', '.', 0xFF, ':', ';', '?', '!', 0xFF, 0xFF, '�', '`', 0xFF, '^',              // 0x40
+    ' ', ',', '.', ',', '.', 0xFF, ':', ';', '?', '!', 0xFF, 0xFF, 0xFF, '`', 0xFF, '^',             // 0x40
     0xFF, '_', 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, '0', 0xFF, '-', '-', 0xFF, 0xFF,      // 0x50
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, '\'', '\'', '"', '"', '(', ')', 0xFF, 0xFF, '[', ']', '{',         // 0x60
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, '+', '-', 0xFF, '*', 0xFF,     // 0x70
-    '/', '=', 0xFF, '<', '>', 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, '�', 0xFF, 0xFF, '�', 0xFF,        // 0x80
+    '/', '=', 0xFF, '<', '>', 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,      // 0x80
     '$', 0xFF, 0xFF, '%', '#', '&', '*', '@', 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,        // 0x90
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0xA0
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // 0xB0
@@ -94,7 +94,6 @@ static int *CreateCoeffInt(int nLen, int nNewLen, int bShrink)
 {
 
     int nSum = 0;
-    int nSum2 = 0;
     int *pRes = (int *)malloc(2 * nLen * sizeof(int));
     int *pCoeff = pRes;
     int nNorm = (bShrink) ? (nNewLen << 12) / nLen : 0x1000;
@@ -104,6 +103,7 @@ static int *CreateCoeffInt(int nLen, int nNewLen, int bShrink)
     memset(pRes, 0, 2 * nLen * sizeof(int));
 
     for (i = 0; i < nLen; i++, pCoeff += 2) {
+        int nSum2;
 
         nSum2 = nSum + nNewLen;
 
@@ -137,13 +137,12 @@ static int *CreateCoeffInt(int nLen, int nNewLen, int bShrink)
 static int ShrinkData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 wNewWidth, u16 wNewHeight)
 {
 
-    u8 *pLine = pInBuff, *pPix;
+    u8 *pLine = pInBuff;
     u8 *pOutLine = pOutBuff;
     u32 dwInLn = (3 * wWidth + 3) & ~3;
     u32 dwOutLn = (3 * wNewWidth + 3) & ~3;
 
-    int x, y, i, ii;
-    int bCrossRow, bCrossCol;
+    int y, i, ii;
     int *pRowCoeff = CreateCoeffInt(wWidth, wNewWidth, 1);
     int *pColCoeff = CreateCoeffInt(wHeight, wNewHeight, 1);
 
@@ -153,13 +152,17 @@ static int ShrinkData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 wN
     u32 *pdwCurrLn = pdwBuff;
     u32 *pdwNextLn = pdwBuff + 3 * wNewWidth;
     u32 *pdwCurrPix;
-    u32 dwTmp, *pdwNextPix;
+    u32 dwTmp;
 
     memset(pdwBuff, 0, 2 * dwBuffLn);
 
     y = 0;
 
     while (y < wNewHeight) {
+        u8 *pPix;
+        int x;
+        int bCrossRow;
+        u32 *pdwNextPix;
 
         pPix = pLine;
         pLine += dwInLn;
@@ -172,6 +175,7 @@ static int ShrinkData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 wN
         bCrossRow = pYCoeff[1] > 0;
 
         while (x < wNewWidth) {
+            int bCrossCol;
 
             dwTmp = *pXCoeff * *pYCoeff;
             for (i = 0; i < 3; i++)
@@ -253,17 +257,16 @@ static int ShrinkData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 wN
 static int EnlargeData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 wNewWidth, u16 wNewHeight)
 {
 
-    u8 *pLine = pInBuff,
-       *pPix = pLine,
-       *pPixOld,
-       *pUpPix,
-       *pUpPixOld;
-    u8 *pOutLine = pOutBuff, *pOutPix;
+    u8 *pLine = pInBuff;
+    u8 *pPix = pLine;
+    const u8 *pPixOld;
+    u8 *pUpPix;
+    const u8 *pUpPixOld;
+    u8 *pOutLine = pOutBuff;
     u32 dwInLn = (3 * wWidth + 3) & ~3;
     u32 dwOutLn = (3 * wNewWidth + 3) & ~3;
 
-    int x, y, i;
-    int bCrossRow, bCrossCol;
+    int y, i;
 
     int *pRowCoeff = CreateCoeffInt(wNewWidth, wWidth, 0);
     int *pColCoeff = CreateCoeffInt(wNewHeight, wHeight, 0);
@@ -274,6 +277,9 @@ static int EnlargeData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 w
     y = 0;
 
     while (y < wHeight) {
+        u8 *pOutPix;
+        int x;
+        int bCrossRow;
 
         bCrossRow = pYCoeff[1] > 0;
         x = 0;
@@ -291,6 +297,7 @@ static int EnlargeData(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 *pOutBuff, u16 w
         } /* end if */
 
         while (x < wWidth) {
+            int bCrossCol;
 
             bCrossCol = pXCoeff[1] > 0;
             pUpPixOld = pUpPix;
@@ -378,7 +385,7 @@ int ScaleBitmap(u8 *pInBuff, u16 wWidth, u16 wHeight, u8 **pOutBuff, u16 wNewWid
 } /* end ScaleBitmap */
 
 //--------------------------------------------------------------
-void RotateBitmap(u8 *InBuff, u16 Width, u16 Height, u8 *OutBuff, int Way)
+void RotateBitmap(const u8 *InBuff, u16 Width, u16 Height, u8 *OutBuff, int Way)
 {
 
     int i, j, k, l;
@@ -395,7 +402,7 @@ void RotateBitmap(u8 *InBuff, u16 Width, u16 Height, u8 *OutBuff, int Way)
             Byte += 3;
         }
     }
-    if (Way == 1) {  // +90�
+    if (Way == 1) {  // +90 degrees
         for (i = 0, l = 0; i < Width; i++, l++) {
             for (j = 0, k = Height - 1; j < Height; j++, k--) {
                 newpixels[j][i][0] = pixels[l][k][0];
@@ -403,7 +410,7 @@ void RotateBitmap(u8 *InBuff, u16 Width, u16 Height, u8 *OutBuff, int Way)
                 newpixels[j][i][2] = pixels[l][k][2];
             }
         }
-    } else if (Way == 3) {  // -90�
+    } else if (Way == 3) {  // -90 degrees
         for (i = 0, l = Width - 1; i < Width; i++, l--) {
             for (j = 0, k = 0; j < Height; j++, k++) {
                 newpixels[j][i][0] = pixels[l][k][0];
@@ -423,9 +430,6 @@ void RotateBitmap(u8 *InBuff, u16 Width, u16 Height, u8 *OutBuff, int Way)
         }
     }
 
-    free(pixels);
-    free(newpixels);
-
 } /* end RotateBitmap */
 
 //--------------------------------------------------------------
@@ -437,7 +441,12 @@ void setScrTmp(const char *msg0, const char *msg1)
     x = SCREEN_MARGIN;
     y = Menu_title_y;
     printXY(setting->Menu_Title, x, y, setting->color[COLOR_TEXT], TRUE, 0);
-    sprintf(temp_txt, " �4 LaunchELF %s �4", ULE_VERSION);
+    sprintf(temp_txt, " "
+                      "\xff"
+                      "4 LaunchELF %s "
+                      "\xff"
+                      "4",
+            ULE_VERSION);
     printXY(temp_txt, SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH * strlen(temp_txt), y,
             setting->color[COLOR_FRAME], TRUE, 0);
 
@@ -474,11 +483,11 @@ void drawPopSprite(u64 color, int x1, int y1, int x2, int y2)
     }
 }
 //--------------------------------------------------------------
-//drawOpSprite exists only to eliminate the use of primitive sprite functions
-//that are specific to the graphics lib used (currently gsKit). So normally
-//it will merely be a 'wrapper' function for one of the lib calls, except
-//that it will also perform any coordinate adjustments (if any)implemented for
-//the functions drawSprite and drawPopSprite, to keep all of them compatible.
+// drawOpSprite exists only to eliminate the use of primitive sprite functions
+// that are specific to the graphics lib used (currently gsKit). So normally
+// it will merely be a 'wrapper' function for one of the lib calls, except
+// that it will also perform any coordinate adjustments (if any)implemented for
+// the functions drawSprite and drawPopSprite, to keep all of them compatible.
 //
 void drawOpSprite(u64 color, int x1, int y1, int x2, int y2)
 {
@@ -559,8 +568,8 @@ void setupGS(void)
     // GS Init
     gsGlobal = gsKit_init_global();
 
-    if (New_TV_mode == TV_mode_AUTO) {         //If no forced request
-        New_TV_mode = uLE_InitializeRegion();  //Let console region decide TV_mode
+    if (New_TV_mode == TV_mode_AUTO) {         // If no forced request
+        New_TV_mode = uLE_InitializeRegion();  // Let console region decide TV_mode
     }
 
     // Screen display mode
@@ -610,8 +619,8 @@ void updateScreenMode(void)
     int setGS_flag = 0;
     int New_TV_mode = setting->TV_mode;
 
-    if (New_TV_mode == TV_mode_AUTO) {         //If no forced request
-        New_TV_mode = uLE_InitializeRegion();  //Let console region decide TV_mode
+    if (New_TV_mode == TV_mode_AUTO) {         // If no forced request
+        New_TV_mode = uLE_InitializeRegion();  // Let console region decide TV_mode
     }
 
     if (New_TV_mode != TV_mode) {
@@ -650,7 +659,7 @@ void updateScreenMode(void)
     gsKit_set_display_offset(gsGlobal, setting->screen_x, setting->screen_y);
 }
 //--------------------------------------------------------------
-void loadSkin(int Picture, char *Path, int ThumbNum)
+void loadSkin(int Picture, const char *Path, int ThumbNum)
 {
     char tmpPath[MAX_PATH], skinpath[MAX_PATH];
 
@@ -681,8 +690,7 @@ void loadSkin(int Picture, char *Path, int ThumbNum)
     PicW = 0, PicH = 0, PicCoeff = 0;
 
     jpgData *Jpg;
-    u8 *ImgData1, *ImgData2;
-    int W = 0;
+    u8 *ImgData1 = NULL, *ImgData2 = NULL;
 
     Jpg = jpgFromFilename(skinpath, JPG_WIDTH_FIX);
     if (Jpg) {
@@ -745,6 +753,8 @@ void loadSkin(int Picture, char *Path, int ThumbNum)
             if ((ScaleBitmap(Jpg->buffer, Jpg->width, Jpg->height, &ImgData1, (int)PicWidth, Jpg->height)) != 0) {
                 if ((ScaleBitmap(ImgData1, (int)PicWidth, Jpg->height, &ImgData2, (int)PicWidth, (int)PicHeight)) != 0) {
                     if ((PicRotate == 1) || (PicRotate == 3)) {  // Rotate picture
+                        int W;
+
                         TexPicture.Mem = (u32 *)memalign(64, ((int)PicWidth * (int)PicHeight * 3) + 1);
                         RotateBitmap(ImgData2, (int)PicWidth, (int)PicHeight, (void *)TexPicture.Mem, PicRotate);
                         W = PicW;
@@ -802,16 +812,17 @@ void loadSkin(int Picture, char *Path, int ThumbNum)
             free(ImgData2);
         if (Jpg->buffer)
             free(Jpg->buffer);
-        if (Jpg)
-            free(Jpg);
+        free(Jpg);
     }
 
     if (!strncmp(tmpPath, "cdfs", 4)) {
         sceCdStop();
         sceCdSync(0);
     }
-    if (!strncmp(tmpPath, "hdd0:/", 6) || !strncmp(tmpPath, "bhdd0:/", 7))
+    if (!strncmp(tmpPath, "hdd0:/", 6))
         unmountParty(0);
+    if (!strncmp(tmpPath, "dvr_hdd0:/", 10))
+        unmountDVRPParty(0);
 }
 //--------------------------------------------------------------
 void loadIcon(void)
@@ -837,7 +848,7 @@ void loadIcon(void)
     free(TexIcon[1].Mem);
 }
 //--------------------------------------------------------------
-int loadFont(char *path_arg)
+int loadFont(const char *path_arg)
 {
     int fd;
 
@@ -878,7 +889,7 @@ int loadFont(char *path_arg)
     return 0;
 }
 //------------------------------
-//endfunc loadFont
+// endfunc loadFont
 //--------------------------------------------------------------
 // Set Skin Brightness
 void setBrightness(int Brightness)
@@ -917,31 +928,31 @@ void clrScr(u64 color)
 //--------------------------------------------------------------
 void drawScr(void)
 {
-    if (updateScr_2) {  //Did we render anything last time
+    if (updateScr_2) {  // Did we render anything last time
         while (Timer() < updateScr_t + 5)
-            ;  //if so, delay to complete rendering
+            ;  // if so, delay to complete rendering
     }
-    gsKit_sync_flip(gsGlobal);   //Await sync and flip buffers
-    gsKit_queue_exec(gsGlobal);  //Start rendering recent transfers for NEXT time
-    updateScr_t = Timer();       //Note the time when the rendering started
-    updateScr_2 = updateScr_1;   //Note if this rendering had expected updates
-    updateScr_1 = 0;             //Note that we've nothing expected for next time
-}  //NB: Apparently the GS keeps rendering while we continue with other work
+    gsKit_sync_flip(gsGlobal);   // Await sync and flip buffers
+    gsKit_queue_exec(gsGlobal);  // Start rendering recent transfers for NEXT time
+    updateScr_t = Timer();       // Note the time when the rendering started
+    updateScr_2 = updateScr_1;   // Note if this rendering had expected updates
+    updateScr_1 = 0;             // Note that we've nothing expected for next time
+}  // NB: Apparently the GS keeps rendering while we continue with other work
 //--------------------------------------------------------------
 void drawFrame(int x1, int y1, int x2, int y2, u64 color)
 {
     updateScr_1 = 1;
 
-    //Top horizontal edge
+    // Top horizontal edge
     gsKit_prim_sprite(gsGlobal, x1, y1, x2, y1 + LINE_THICKNESS - 1, 1, color);
 
-    //Bottom horizontal
+    // Bottom horizontal
     gsKit_prim_sprite(gsGlobal, x1, y2 - LINE_THICKNESS + 1, x2, y2, 1, color);
 
-    //Left vertical edge
+    // Left vertical edge
     gsKit_prim_sprite(gsGlobal, x1, y1, x1 + LINE_THICKNESS - 1, y2, 1, color);
 
-    //Right vertical edge
+    // Right vertical edge
     gsKit_prim_sprite(gsGlobal, x2 - LINE_THICKNESS + 1, y1, x2, y2, 1, color);
 }
 
@@ -949,36 +960,38 @@ void drawFrame(int x1, int y1, int x2, int y2, u64 color)
 // draw a char using the system font (16x16)
 void drawChar(unsigned int c, int x, int y, u64 colour)
 {
-    int i, j, pixBase, pixMask;
-    u8 *cm;
+    int i, j, pixMask;
+    const u8 *cm;
 
     updateScr_1 = 1;
 
     if (c >= FONT_COUNT)
         c = '_';
-    if (c > 0xFF)                  //if char is beyond normal ascii range
+    if (c > 0xFF)                  // if char is beyond normal ascii range
         cm = &font_uLE[c * 16];    //  cm points to special char def in default font
-    else                           //else char is inside normal ascii range
+    else                           // else char is inside normal ascii range
         cm = &FontBuffer[c * 16];  //  cm points to normal char def in active font
 
     pixMask = 0x80;
-    for (i = 0; i < 8; i++) {  //for i == each pixel column
+    for (i = 0; i < 8; i++) {  // for i == each pixel column
+        int pixBase;
+
         pixBase = -1;
-        for (j = 0; j < 16; j++) {                     //for j == each pixel row
-            if ((pixBase < 0) && (cm[j] & pixMask)) {  //if start of sequence
+        for (j = 0; j < 16; j++) {                     // for j == each pixel row
+            if ((pixBase < 0) && (cm[j] & pixMask)) {  // if start of sequence
                 pixBase = j;
-            } else if ((pixBase > -1) && !(cm[j] & pixMask)) {  //if end of sequence
+            } else if ((pixBase > -1) && !(cm[j] & pixMask)) {  // if end of sequence
                 gsKit_prim_sprite(gsGlobal, x + i, y + pixBase - 1, x + i + 1, y + j - 1, 1, colour);
                 pixBase = -1;
             }
-        }                  //ends for j == each pixel row
-        if (pixBase > -1)  //if end of sequence including final row
+        }                  // ends for j == each pixel row
+        if (pixBase > -1)  // if end of sequence including final row
             gsKit_prim_sprite(gsGlobal, x + i, y + pixBase - 1, x + i + 1, y + j - 1, 1, colour);
         pixMask >>= 1;
-    }  //ends for i == each pixel column
+    }  // ends for i == each pixel column
 }
 //------------------------------
-//endfunc drawChar
+// endfunc drawChar
 //--------------------------------------------------------------
 // draw a char using the ELISA font (16x16)
 void drawChar2(int n, int x, int y, u64 colour)
@@ -999,7 +1012,7 @@ void drawChar2(int n, int x, int y, u64 colour)
     }
 }
 //------------------------------
-//endfunc drawChar2
+// endfunc drawChar2
 //--------------------------------------------------------------
 // draw a string of characters, without shift-JIS support
 int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
@@ -1027,16 +1040,16 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
             if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
                 break;
             continue;
-        }  //End if for normal character
-        // Here we got a sequence starting with 0xFF ('�')
+        }  // End if for normal character
+        // Here we got a sequence starting with 0xFF ('\xff')
         if ((c2 = (unsigned char)s[i++]) == 0)
             break;
         if ((c2 < '0') || (c2 > '='))
             continue;
         c1 = (c2 - '0') * 2 + 0x100;
         if (draw) {
-            //expand sequence �0=Circle  �1=Cross  �2=Square  �3=Triangle  �4=FilledBox
-            //"�:"=Pad_Right  "�;"=Pad_Down  "�<"=Pad_Left  "�="=Pad_Up
+            // expand sequence "\xff""0"=Circle  "\xff""1"=Cross  "\xff""2"=Square  "\xff""3"=Triangle  "\xff""4"=FilledBox
+            //"\xff"":"=Pad_Right  "\xff"";"=Pad_Down  "\xff""<"=Pad_Left  "\xff""="=Pad_Up
             drawChar(c1, x, y, colour);
             x += 8;
             if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH)
@@ -1050,7 +1063,7 @@ int printXY(const char *s, int x, int y, u64 colour, int draw, int space)
     return x;
 }
 //------------------------------
-//endfunc printXY
+// endfunc printXY
 //--------------------------------------------------------------
 // draw a string of characters, with shift-JIS support (only for gamesave titles)
 int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
@@ -1062,13 +1075,13 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
 
     i = 0;
     while (s[i]) {
-        if ((s[i] & 0x80) && s[i + 1]) {  //we have top bit and some more char ?
+        if ((s[i] & 0x80) && s[i + 1]) {  // we have top bit and some more char ?
             // SJIS
             code = s[i++];
             code = (code << 8) + s[i++];
 
             switch (code) {
-                // Circle == "��"
+                // Circle == "O"
                 case 0x819B:
                     if (draw) {
                         drawChar(0x100, x, y, colour);
@@ -1076,7 +1089,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                     }
                     x += 16;
                     break;
-                // Cross == "�~"
+                // Cross == "X"
                 case 0x817E:
                     if (draw) {
                         drawChar(0x102, x, y, colour);
@@ -1084,7 +1097,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                     }
                     x += 16;
                     break;
-                // Square == "��"
+                // Square == "[]"
                 case 0x81A0:
                     if (draw) {
                         drawChar(0x104, x, y, colour);
@@ -1092,7 +1105,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                     }
                     x += 16;
                     break;
-                // Triangle == "��"
+                // Triangle == "/\"
                 case 0x81A2:
                     if (draw) {
                         drawChar(0x106, x, y, colour);
@@ -1100,7 +1113,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                     }
                     x += 16;
                     break;
-                // FilledBox == "��"
+                // FilledBox
                 case 0x81A1:
                     if (draw) {
                         drawChar(0x108, x, y, colour);
@@ -1113,7 +1126,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                         tmp = y;
                         if (code <= 0x829A)
                             tmp++;
-                        // SJIS����EUC�ɕϊ�
+                        // Convert SJIS/CP932 to EUC_JP.
                         if (code >= 0xE000)
                             code -= 0x4000;
                         code = ((((code >> 8) & 0xFF) - 0x81) << 9) + (code & 0x00FF);
@@ -1125,7 +1138,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                             code -= 0x40;
                         code += 0x2121 + 0x8080;
 
-                        // EUC����b�����t�H���g�̔ԍ��𐶐�
+                        // EUC_JP normalization (?)
                         n = (((code >> 8) & 0xFF) - 0xA1) * (0xFF - 0xA1) + (code & 0xFF) - 0xA1;
                         j = 0;
                         while (font404[j]) {
@@ -1150,7 +1163,7 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                                 drawChar('_', x, y, colour);
                             x += 8;
                         }
-                    } else {  //elisa font is not available
+                    } else {  // elisa font is not available
                         ascii = 0xFF;
                         if (code >> 8 == 0x81)
                             ascii = sjis_lookup_81[code & 0x00FF];
@@ -1167,23 +1180,23 @@ int printXY_sjis(const unsigned char *s, int x, int y, u64 colour, int draw)
                     }
                     break;
             }
-        } else {  //First char does not have top bit set or no following char
+        } else {  // First char does not have top bit set or no following char
             if (draw)
                 drawChar(s[i], x, y, colour);
             i++;
             x += 8;
         }
         if (x > SCREEN_WIDTH - SCREEN_MARGIN - FONT_WIDTH) {
-            //x=16; y=y+8;
+            // x=16; y=y+8;
             return x;
         }
     }
     return x;
 }
 //------------------------------
-//endfunc printXY_sjis
+// endfunc printXY_sjis
 //--------------------------------------------------------------
-//translate a string from shift-JIS to ascii (for gamesave titles)
+// translate a string from shift-JIS to ascii (for gamesave titles)
 char *transcpy_sjis(char *d, const unsigned char *s)
 {
     u8 ascii;
@@ -1192,7 +1205,7 @@ char *transcpy_sjis(char *d, const unsigned char *s)
 
     for (i = 0, j = 0; s[i];) {
         code1 = s[i++];
-        if ((code1 & 0x80) && s[i]) {  //we have top bit and some more char (SJIS) ?
+        if ((code1 & 0x80) && s[i]) {  // we have top bit and some more char (SJIS) ?
             // SJIS
             code2 = s[i++];
             ascii = 0xFF;
@@ -1205,18 +1218,18 @@ char *transcpy_sjis(char *d, const unsigned char *s)
             } else {
                 d[j++] = '_';
             }
-        } else {  //First char lacks top bit set or no following char (non-SJIS)
+        } else {  // First char lacks top bit set or no following char (non-SJIS)
             d[j++] = (char)code1;
         }
-    }             //ends for
-    d[j] = '\0';  //terminate result string
+    }             // ends for
+    d[j] = '\0';  // terminate result string
     return d;
 }
 //------------------------------
-//endfunc transcpy_sjis
+// endfunc transcpy_sjis
 //--------------------------------------------------------------
-//WriteFont_C is used to save the current font as C source code
-//Comment it out if not used
+// WriteFont_C is used to save the current font as C source code
+// Comment it out if not used
 /*
 int WriteFont_C(char *path_arg)
 {
@@ -1282,7 +1295,7 @@ finish:
 }
 */
 //------------------------------
-//endfunc WriteFont_C
+// endfunc WriteFont_C
 //--------------------------------------------------------------
-//End of file: draw.c
+// End of file: draw.c
 //--------------------------------------------------------------

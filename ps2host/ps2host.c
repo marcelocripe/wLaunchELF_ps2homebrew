@@ -15,6 +15,10 @@
 #include <cdvdman.h>
 #endif
 
+#define MODNAME "ps2host"
+
+IRX_ID(MODNAME, 1, 1);
+
 // Entry points
 extern int fsysMount(void);
 ////////////////////////////////////////////////////////////////////////
@@ -23,7 +27,7 @@ extern int fsysMount(void);
 int _start(int argc, char **argv)
 {
     FlushDcache();
-    CpuEnableIntr(0);
+    CpuEnableIntr();
 #if 0 /* EEUG: what the hell these two are doing here ? */
     sceCdInit(1);
     sceCdStop();

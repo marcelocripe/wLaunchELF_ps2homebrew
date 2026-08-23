@@ -9,9 +9,9 @@
 #include <cdvdman.h>
 
 //  Define this to enable debugging, will later support debugging levels, so only messages greater then a certain level will be displayed
-//#define DEBUG 8
-//For release versions of uLE, DEBUG should not be defined
-//To avoid slowdown and size bloat
+// #define DEBUG 8
+// For release versions of uLE, DEBUG should not be defined
+// To avoid slowdown and size bloat
 
 //  Define this to enable some basic profiling support, each function will display the time it took to run.
 //  #define PROFILING
@@ -105,15 +105,15 @@ typedef enum {
 #ifdef PROFILING
 void profilerStart(iop_sys_clock_t *iopclock);
 void profilerEnd(const char *function, const char *name, iop_sys_clock_t *iopclock1);
-//This creates 2 variables with the names name1/name2, and starts the profiler
+// This creates 2 variables with the names name1/name2, and starts the profiler
 #define PROF_START(name)  \
     iop_sys_clock_t name; \
     profilerStart(&name);
-//this takes the 2 variable names and ends the profiler, printing the time taken
+// this takes the 2 variable names and ends the profiler, printing the time taken
 #define PROF_END(name) \
     profilerEnd(__func__, #name, &name);
 #else
-//define away the profiler functions
+// define away the profiler functions
 #define PROF_START(args) ;
 #define PROF_END(args)   ;
 #endif
@@ -251,7 +251,7 @@ int Vmc_Mkdir(iop_file_t *f, const char *path1, int mode);
 int Vmc_Rmdir(iop_file_t *f, const char *path1);
 int Vmc_Dopen(iop_file_t *f, const char *path);
 int Vmc_Dclose(iop_file_t *f);
-int Vmc_Dread(iop_file_t *f, iox_dirent_t *buf);
+int Vmc_Dread(iop_file_t *f, iox_dirent_t *buffer);
 int Vmc_Getstat(iop_file_t *f, const char *path, iox_stat_t *stat);
 int Vmc_Chstat(iop_file_t *f, const char *path, iox_stat_t *stat, unsigned int statmask);
 int Vmc_Rename(iop_file_t *f, const char *path, const char *new_name);
@@ -279,24 +279,24 @@ typedef enum {
     FAT_SET
 } SetFat_Mode;
 
-unsigned int getFatEntry(int fd, unsigned int cluster, unsigned int *indir_fat_clusters, GetFat_Mode Mode);
-unsigned int setFatEntry(int fd, unsigned int cluster, unsigned int value, unsigned int *indir_fat_clusters, SetFat_Mode Mode);
+unsigned int getFatEntry(int fd, unsigned int cluster, const unsigned int *indir_fat_clusters, GetFat_Mode Mode);
+unsigned int setFatEntry(int fd, unsigned int cluster, unsigned int value, const unsigned int *indir_fat_clusters, SetFat_Mode Mode);
 
 
 //  ps2.c
 int eraseBlock(int fd, unsigned int block);
 int writePage(int fd, u8 *page, unsigned int pagenum);
-int writeCluster(int fd, u8 *cluster, unsigned int clusternum);
-int writeClusterPart(int fd, u8 *cluster, unsigned int clusternum, int cluster_offset, int size);
+int writeCluster(int fd, const u8 *cluster, unsigned int clusternum);
+int writeClusterPart(int fd, const u8 *cluster, unsigned int clusternum, int cluster_offset, int size);
 int readPage(int fd, u8 *page, unsigned int pagenum);
 int readCluster(int fd, u8 *cluster, unsigned int clusternum);
 
 
 //  misc.c
 unsigned int getDirentryFromPath(struct direntry *retval, const char *path, struct gen_privdata *gendata, int unit);
-unsigned int addObject(struct gen_privdata *gendata, unsigned int parentcluster, struct direntry *parent, struct direntry *dirent, int unit);
-void removeObject(struct gen_privdata *gendata, unsigned int dirent_cluster, struct direntry *dirent, int unit);
-unsigned int getFreeCluster(struct gen_privdata *gendata, int unit);
+unsigned int addObject(struct gen_privdata *gendata, unsigned int parent_cluster, struct direntry *parent, struct direntry *dirent, int unit);
+void removeObject(const struct gen_privdata *gendata, unsigned int dirent_cluster, struct direntry *dirent, int unit);
+unsigned int getFreeCluster(const struct gen_privdata *gendata, int unit);
 int getPs2Time(vmc_datetime *tm);
 int setDefaultSpec(int unit);
 void buildECC(int unit, const u8 *Page_Data, u8 *ECC_Data);

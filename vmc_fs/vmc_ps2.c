@@ -88,7 +88,7 @@ int writePage(int fd, u8 *page, unsigned int pagenum)
     return 0;
 }
 
-int writeCluster(int fd, u8 *cluster, unsigned int clusternum)
+int writeCluster(int fd, const u8 *cluster, unsigned int clusternum)
 {
 
     int i, unit;
@@ -114,7 +114,7 @@ int writeCluster(int fd, u8 *cluster, unsigned int clusternum)
     return 0;
 }
 
-int writeClusterPart(int fd, u8 *cluster, unsigned int clusternum, int cluster_offset, int size)
+int writeClusterPart(int fd, const u8 *cluster, unsigned int clusternum, int cluster_offset, int size)
 {
 
     int i, unit;
@@ -124,7 +124,6 @@ int writeClusterPart(int fd, u8 *cluster, unsigned int clusternum, int cluster_o
     unit = (fd == g_Vmc_Image[0].fd) ? 0 : 1;
 
     Page_Num = clusternum * g_Vmc_Image[unit].header.pages_per_cluster;
-    Page_offset = cluster_offset;
 
     Page_Data = (u8 *)malloc((g_Vmc_Image[unit].header.page_size + 0xFF) & ~(unsigned int)0xFF);
 

@@ -1,12 +1,9 @@
 //--------------------------------------------------------------
-//File name:   apa.c
+// File name:   apa.c
 //--------------------------------------------------------------
-#include <thbase.h>
-#include <sysclib.h>
-#include <cdvdman.h>
-#include <iomanX.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "main.h"
 #include "ps2_hdd.h"
 #include "hdd.h"
 #include "hdl.h"
@@ -16,27 +13,21 @@
 
 #define _MB *(1024 * 1024) /* really ugly :-) */
 
-typedef struct ps2_partition_run_type
-{
-    unsigned long sector;
-    u_long size_in_mb;
-} ps2_partition_run_t;
-
-//Remove this line, and uncomment the next line, to reactivate 'apa_check'
-//static int apa_check(const apa_partition_table_t *table);
+// Remove this line, and uncomment the next line, to reactivate 'apa_check'
+// static int apa_check(const apa_partition_table_t *table);
 
 //--------------------------------------------------------------
-u_long apa_partition_checksum(const ps2_partition_header_t *part)
+u_int32_t apa_partition_checksum(const ps2_partition_header_t *part)
 {
-    const u_long *p = (const u_long *)part;
-    register u_long i;
-    u_long sum = 0;
+    const u_int32_t *p = (const u_int32_t *)part;
+    register u_int32_t i;
+    u_int32_t sum = 0;
     for (i = 1; i < 256; ++i)
         sum += get_u32(p + i);
     return sum;
 }
 //------------------------------
-//endfunc apa_partition_checksum
+// endfunc apa_partition_checksum
 //--------------------------------------------------------------
 static apa_partition_table_t *apa_ptable_alloc(void)
 {
@@ -46,7 +37,7 @@ static apa_partition_table_t *apa_ptable_alloc(void)
     return table;
 }
 //------------------------------
-//endfunc apa_ptable_alloc
+// endfunc apa_ptable_alloc
 //--------------------------------------------------------------
 void apa_ptable_free(apa_partition_table_t *table)
 {
@@ -59,12 +50,12 @@ void apa_ptable_free(apa_partition_table_t *table)
     }
 }
 //------------------------------
-//endfunc apa_ptable_free
+// endfunc apa_ptable_free
 //--------------------------------------------------------------
 static int apa_part_add(apa_partition_table_t *table, const ps2_partition_header_t *part, int existing, int linked)
 {
     if (table->part_count == table->part_alloc_) { /* grow buffer */
-        u_long bytes = (table->part_alloc_ + 16) * sizeof(apa_partition_t);
+        u_int32_t bytes = (table->part_alloc_ + 16) * sizeof(apa_partition_t);
         apa_partition_t *tmp = malloc(bytes);
         if (tmp != NULL) {
             memset(tmp, 0, bytes);
@@ -86,12 +77,12 @@ static int apa_part_add(apa_partition_table_t *table, const ps2_partition_header
     return 0;
 }
 //------------------------------
-//endfunc apa_part_add
+// endfunc apa_part_add
 //--------------------------------------------------------------
 /* //Remove this line and a similar one below to reactivate 'apa_setup_statistics'
 static int apa_setup_statistics(apa_partition_table_t *table)
 {
- u_long i;
+ u_int32_t i;
  char *map;
 
  table->total_chunks = table->device_size_in_mb / 128;
@@ -107,8 +98,8 @@ static int apa_setup_statistics(apa_partition_table_t *table)
   for(i=0; i<table->part_count; ++i)
   {
    const ps2_partition_header_t *part = &table->parts [i].header;
-   u_long part_no = get_u32(&part->start) / ((128 _MB) / 512);
-   u_long num_parts = get_u32(&part->length) / ((128 _MB) / 512);
+   u_int32_t part_no = get_u32(&part->start) / ((128 _MB) / 512);
+   u_int32_t num_parts = get_u32(&part->length) / ((128 _MB) / 512);
 
    // "alloc" num_parts starting at part_no
    while (num_parts)
@@ -133,33 +124,33 @@ static int apa_setup_statistics(apa_partition_table_t *table)
  else return -2;
 }
 */
-//Remove this line and a similar one below to reactivate 'apa_setup_statistics'
+// Remove this line and a similar one below to reactivate 'apa_setup_statistics'
 //------------------------------
-//endfunc apa_setup_statistics
+// endfunc apa_setup_statistics
 //--------------------------------------------------------------
 int apa_ptable_read_ex(hio_t *hio, apa_partition_table_t **table)
 {
-    u_long size_in_kb;
+    u_int32_t size_in_kb;
     int result = hio->stat(hio, &size_in_kb);
     if (result == 0) {
-        u_long total_sectors;
-        // limit HDD size to 128GB - 1KB; that is: exclude the last 128MB chunk
-        //if (size_in_kb > 128 * 1024 * 1024 - 1)
-        // size_in_kb = 128 * 1024 * 1024 - 1;
-
-        total_sectors = size_in_kb * 2; /* 1KB = 2 sectors of 512 bytes, each */
-
         *table = apa_ptable_alloc();
         if (*table != NULL) {
-            u_long sector = 0;
+            u_int32_t sector = 0;
             do {
-                u_long bytes;
+                u_int32_t bytes;
                 ps2_partition_header_t part;
                 result = hio->read(hio, sector, sizeof(part) / 512, &part, &bytes);
                 if (result == 0) {
                     if (bytes == sizeof(part) &&
                         get_u32(&part.checksum) == apa_partition_checksum(&part) &&
                         memcmp(part.magic, PS2_PARTITION_MAGIC, 4) == 0) {
+                        u_int32_t total_sectors;
+                        // limit HDD size to 128GB - 1KB; that is: exclude the last 128MB chunk
+                        // if (size_in_kb > 128 * 1024 * 1024 - 1)
+                        // size_in_kb = 128 * 1024 * 1024 - 1;
+
+                        total_sectors = size_in_kb * 2; /* 1KB = 2 sectors of 512 bytes, each */
+
                         if (get_u32(&part.start) < total_sectors &&
                             get_u32(&part.start) + get_u32(&part.length) < total_sectors) {
                             if ((get_u16(&part.flags) == 0x0000) && (get_u16(&part.type) == 0x1337))
@@ -174,17 +165,17 @@ int apa_ptable_read_ex(hio_t *hio, apa_partition_table_t **table)
                         result = 1;
                 }
                 /* TODO: check whether next partition is not loaded already --
-				* do not deadlock; that is a quick-and-dirty hack */
+                 * do not deadlock; that is a quick-and-dirty hack */
                 if ((*table)->part_count > 10000)
                     result = 7;
             } while (result == 0 && sector != 0);
 
             if (result == 0) {
                 (*table)->device_size_in_mb = size_in_kb / 1024;
-                //NB: uncommenting the next lines requires changes elsewhere too
-                //result = apa_setup_statistics (*table);
-                //if (result == 0)
-                //result = apa_check (*table);
+                // NB: uncommenting the next lines requires changes elsewhere too
+                // result = apa_setup_statistics (*table);
+                // if (result == 0)
+                // result = apa_check (*table);
             }
 
             if (result != 0) {
@@ -197,15 +188,15 @@ int apa_ptable_read_ex(hio_t *hio, apa_partition_table_t **table)
     return result;
 }
 //------------------------------
-//endfunc apa_ptable_read_ex
+// endfunc apa_ptable_read_ex
 //--------------------------------------------------------------
 /* //Remove this line and a similar one below to reactivate 'apa_check'
 static int apa_check(const apa_partition_table_t *table)
 {
 
-    u_long i, j, k;
+    u_int32_t i, j, k;
 
-    const u_long total_sectors = table->device_size_in_mb * 1024 * 2;
+    const u_int32_t total_sectors = table->device_size_in_mb * 1024 * 2;
 
     for (i = 0; i < table->part_count; ++i) {
         const ps2_partition_header_t *part = &table->parts[i].header;
@@ -228,7 +219,7 @@ static int apa_check(const apa_partition_table_t *table)
         if (get_u32(&part->main) == 0 &&
             get_u16(&part->flags) == 0 &&
             get_u32(&part->start) != 0) {  // check sub-partitions
-            u_long count = 0;
+            u_int32_t count = 0;
             for (j = 0; j < table->part_count; ++j) {
                 const ps2_partition_header_t *part2 = &table->parts[j].header;
                 if (get_u32(&part2->main) == get_u32(&part->start)) {  // sub-partition of current main partition
@@ -268,49 +259,49 @@ static int apa_check(const apa_partition_table_t *table)
     return 0;
 }
 */
-//Remove this line and a similar one above to reactivate 'apa_check'
+// Remove this line and a similar one above to reactivate 'apa_check'
 //------------------------------
-//endfunc apa_check
+// endfunc apa_check
 //--------------------------------------------------------------
-u_long get_u32(const void *buffer)
+u_int32_t get_u32(const void *buffer)
 {
-    const u_char *p = buffer;
-    return ((((u_long)p[3]) << 24) |
-            (((u_long)p[2]) << 16) |
-            (((u_long)p[1]) << 8) |
-            (((u_long)p[0]) << 0));
+    const u_int8_t *p = buffer;
+    return ((((u_int32_t)p[3]) << 24) |
+            (((u_int32_t)p[2]) << 16) |
+            (((u_int32_t)p[1]) << 8) |
+            (((u_int32_t)p[0]) << 0));
 }
 //------------------------------
-//endfunc get_u32
+// endfunc get_u32
 //--------------------------------------------------------------
-void set_u32(void *buffer, u_long val)
+void set_u32(void *buffer, u_int32_t val)
 {
-    u_char *p = buffer;
-    p[3] = (u_char)(val >> 24);
-    p[2] = (u_char)(val >> 16);
-    p[1] = (u_char)(val >> 8);
-    p[0] = (u_char)(val >> 0);
+    u_int8_t *p = buffer;
+    p[3] = (u_int8_t)(val >> 24);
+    p[2] = (u_int8_t)(val >> 16);
+    p[1] = (u_int8_t)(val >> 8);
+    p[0] = (u_int8_t)(val >> 0);
 }
 //------------------------------
-//endfunc set_u32
+// endfunc set_u32
 //--------------------------------------------------------------
-u_short get_u16(const void *buffer)
+u_int16_t get_u16(const void *buffer)
 {
-    const u_char *p = buffer;
-    return ((((u_short)p[1]) << 8) |
-            (((u_short)p[0]) << 0));
+    const u_int8_t *p = buffer;
+    return ((((u_int16_t)p[1]) << 8) |
+            (((u_int16_t)p[0]) << 0));
 }
 //------------------------------
-//endfunc get_u16
+// endfunc get_u16
 //--------------------------------------------------------------
-void set_u16(void *buffer, u_short val)
+void set_u16(void *buffer, u_int16_t val)
 {
-    u_char *p = buffer;
-    p[1] = (u_char)(val >> 8);
-    p[0] = (u_char)(val >> 0);
+    u_int8_t *p = buffer;
+    p[1] = (u_int8_t)(val >> 8);
+    p[0] = (u_int8_t)(val >> 0);
 }
 //------------------------------
-//endfunc set_u16
+// endfunc set_u16
 //--------------------------------------------------------------
-//End of file: apa.c
+// End of file: apa.c
 //--------------------------------------------------------------
